@@ -5,32 +5,6 @@
 # ==============================================================================
 
 
-
-
-
-# Patch Web Dockerfile
-            if [ -f "$FILE_WEB" ]; then
-                sed -i 's/dotnet\/sdk:9.0/dotnet\/sdk:10.0/g' "$FILE_WEB"
-                sed -i 's/dotnet\/aspnet:9.0/dotnet\/aspnet:10.0/g' "$FILE_WEB"
-                echo " - $FILE_WEB updated to .NET 10.0"
-            fi
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Configuration
 PROJECTS_DIR="./projects"
 ESHOP_DIR="$PROJECTS_DIR/eShopOnWeb"
@@ -103,18 +77,18 @@ case "$COMMAND" in
 	    FILE_OVERRIDE="$ESHOP_DIR/docker-compose.override.yml"
 	    
 	    # Patch Web Dockerfile
-            if [ -f "$FILE_WEB" ]; then
-                sed -i 's/dotnet\/sdk:9.0/dotnet\/sdk:10.0/g' "$FILE_WEB"
-                sed -i 's/dotnet\/aspnet:9.0/dotnet\/aspnet:10.0/g' "$FILE_WEB"
-                echo " - $FILE_WEB updated to .NET 10.0"
-            fi
+        if [ -f "$FILE_WEB" ]; then
+            sed -i 's/dotnet\/sdk:9.0/dotnet\/sdk:10.0/g' "$FILE_WEB"
+            sed -i 's/dotnet\/aspnet:9.0/dotnet\/aspnet:10.0/g' "$FILE_WEB"
+             echo " - $FILE_WEB updated to .NET 10.0"
+        fi
 
-            # Patch PublicApi Dockerfile
-            if [ -f "$FILE_API" ]; then
-                sed -i 's/dotnet\/sdk:9.0/dotnet\/sdk:10.0/g' "$FILE_API"
-                sed -i 's/dotnet\/aspnet:9.0/dotnet\/aspnet:10.0/g' "$FILE_API"
-                echo " - $FILE_API updated to .NET 10.0"
-            fi
+        # Patch PublicApi Dockerfile
+        if [ -f "$FILE_API" ]; then
+            sed -i 's/dotnet\/sdk:9.0/dotnet\/sdk:10.0/g' "$FILE_API"
+            sed -i 's/dotnet\/aspnet:9.0/dotnet\/aspnet:10.0/g' "$FILE_API"
+            echo " - $FILE_API updated to .NET 10.0"
+        fi
 
 	    # Replace ASPNETCORE_URLS with Aspire__Seq__ServerUrl in override file            
 	    if [ -f "$FILE_OVERRIDE" ]; then                
