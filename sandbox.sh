@@ -4,6 +4,8 @@
 # Developer Sandbox Management Script
 # ==============================================================================
 
+#amb
+
 # Configuration
 PROJECTS_DIR="./projects"
 ESHOP_DIR="$PROJECTS_DIR/eShopOnWeb"
