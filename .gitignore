@@ -1,1 +1,20 @@
 !projects/.gitkeep
+projects/
+results/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Docker & Environment
+.env
+.env.local
+*.log
+docker-compose.override.yml
+
+# Temporary Sandbox data
+# Если твои скрипты будут генерировать временные конфиги или дампы
+*.tmp
+*.bak
