@@ -71,30 +71,30 @@ case "$COMMAND" in
             
             echo "Patching eShopOnWeb files....."
             # Update Dockerfiles to .NET 10.0
-	    # Specific Dockerfile paths provided            
-	    FILE_WEB="$ESHOP_DIR/src/Web/Dockerfile"            
-	    FILE_API="$ESHOP_DIR/src/PublicApi/Dockerfile"            
-	    FILE_OVERRIDE="$ESHOP_DIR/docker-compose.override.yml"
+	        # Specific Dockerfile paths provided            
+	        FILE_WEB="$ESHOP_DIR/src/Web/Dockerfile"            
+	        FILE_API="$ESHOP_DIR/src/PublicApi/Dockerfile"            
+	        FILE_OVERRIDE="$ESHOP_DIR/docker-compose.override.yml"
 	    
-	    # Patch Web Dockerfile
-        if [ -f "$FILE_WEB" ]; then
-            sed -i 's/dotnet\/sdk:9.0/dotnet\/sdk:10.0/g' "$FILE_WEB"
-            sed -i 's/dotnet\/aspnet:9.0/dotnet\/aspnet:10.0/g' "$FILE_WEB"
-             echo " - $FILE_WEB updated to .NET 10.0"
-        fi
+	        # Patch Web Dockerfile
+            if [ -f "$FILE_WEB" ]; then
+                sed -i 's/dotnet\/sdk:9.0/dotnet\/sdk:10.0/g' "$FILE_WEB"
+                sed -i 's/dotnet\/aspnet:9.0/dotnet\/aspnet:10.0/g' "$FILE_WEB"
+                echo " - $FILE_WEB updated to .NET 10.0"
+            fi
 
-        # Patch PublicApi Dockerfile
-        if [ -f "$FILE_API" ]; then
-            sed -i 's/dotnet\/sdk:9.0/dotnet\/sdk:10.0/g' "$FILE_API"
-            sed -i 's/dotnet\/aspnet:9.0/dotnet\/aspnet:10.0/g' "$FILE_API"
-            echo " - $FILE_API updated to .NET 10.0"
-        fi
+            # Patch PublicApi Dockerfile
+            if [ -f "$FILE_API" ]; then
+                sed -i 's/dotnet\/sdk:9.0/dotnet\/sdk:10.0/g' "$FILE_API"
+                sed -i 's/dotnet\/aspnet:9.0/dotnet\/aspnet:10.0/g' "$FILE_API"
+                echo " - $FILE_API updated to .NET 10.0"
+            fi
 
-	    # Replace ASPNETCORE_URLS with Aspire__Seq__ServerUrl in override file            
-	    if [ -f "$FILE_OVERRIDE" ]; then                
-	    	sed -i 's|- ASPNETCORE_URLS=http://+:8080|- Aspire__Seq__ServerUrl=http://localhost:1111|g' "$FILE_OVERRIDE"                
-	    	echo " - $FILE_OVERRIDE environment variables updated."            
-	    fi
+	        # Replace ASPNETCORE_URLS with Aspire__Seq__ServerUrl in override file            
+	        if [ -f "$FILE_OVERRIDE" ]; then                
+	    	    sed -i 's|- ASPNETCORE_URLS=http://+:8080|- Aspire__Seq__ServerUrl=http://localhost:1111|g' "$FILE_OVERRIDE"                
+	    	    echo " - $FILE_OVERRIDE environment variables updated."            
+	        fi
 	    
         fi
 
@@ -116,10 +116,40 @@ case "$COMMAND" in
         ;;
 
     clean)
-        set_workdir "$TARGET"
-        echo "Purging $TARGET environment (Clean State)..."
-        docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans
+        echo "Purging $TARGET environment (Full Reset)..."
+        
+        # 1. Stop and remove containers, volumes, and orphans
+        if [ "$TARGET" == "all" ]; then
+            # Clean eshop
+            set_workdir "eshop"
+            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans 2>/dev/null
+            # Clean medplum
+            set_workdir "medplum"
+            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans 2>/dev/null
+        else
+            set_workdir "$TARGET"
+            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans
+        fi
+
+        # 2. Remove cloned source code
+        echo "Removing source code directories..."
+        if [ "$TARGET" == "eshop" ] || [ "$TARGET" == "all" ]; then
+            if [ -d "$ESHOP_DIR" ]; then
+                rm -rf "$ESHOP_DIR"
+                echo " - $ESHOP_DIR deleted."
+            fi
+        fi
+        
+        if [ "$TARGET" == "medplum" ] || [ "$TARGET" == "all" ]; then
+            if [ -d "$MEDPLUM_DIR" ]; then
+                rm -rf "$MEDPLUM_DIR"
+                echo " - $MEDPLUM_DIR deleted."
+            fi
+        fi
+        
+        echo "Cleanup complete. System is in a 'Ready to Setup' state."
         ;;
+
 
     test)
         set_workdir "$TARGET"
