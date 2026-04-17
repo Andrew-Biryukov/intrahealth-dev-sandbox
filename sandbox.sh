@@ -122,13 +122,13 @@ case "$COMMAND" in
         if [ "$TARGET" == "all" ]; then
             # Clean eshop
             set_workdir "eshop"
-            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans 2>/dev/null
+            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans --rmi all 2>/dev/null
             # Clean medplum
             set_workdir "medplum"
-            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans 2>/dev/null
+            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans --rmi all 2>/dev/null
         else
             set_workdir "$TARGET"
-            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans
+            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans --rmi all
         fi
 
         # 2. Remove cloned source code
