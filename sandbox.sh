@@ -2,6 +2,7 @@
 
 # ==============================================================================
 # Developer Sandbox Management Script
+# Designed for AI Coding Agents - Supports Headless & Deterministic Workflows
 # ==============================================================================
 
 # Configuration
