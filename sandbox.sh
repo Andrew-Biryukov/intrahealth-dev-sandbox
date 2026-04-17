@@ -4,7 +4,32 @@
 # Developer Sandbox Management Script
 # ==============================================================================
 
-#amb
+
+
+
+
+# Patch Web Dockerfile
+            if [ -f "$FILE_WEB" ]; then
+                sed -i 's/dotnet\/sdk:9.0/dotnet\/sdk:10.0/g' "$FILE_WEB"
+                sed -i 's/dotnet\/aspnet:9.0/dotnet\/aspnet:10.0/g' "$FILE_WEB"
+                echo " - $FILE_WEB updated to .NET 10.0"
+            fi
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Configuration
 PROJECTS_DIR="./projects"
