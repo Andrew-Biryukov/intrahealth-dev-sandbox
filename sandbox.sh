@@ -2,7 +2,6 @@
 
 # ==============================================================================
 # Developer Sandbox Management Script
-# Designed for AI Coding Agents - Supports Headless & Deterministic Workflows
 # ==============================================================================
 
 # Configuration
@@ -22,10 +21,6 @@ mkdir -p "$RESULTS_DIR"
 
 usage() {
     echo "Usage: $0 {setup|start|stop|clean|test|status} {eshop|medplum|all}"
-    echo "Examples:"
-    echo "  $0 setup all      # Clones all repositories"
-    echo "  $0 start eshop    # Starts eShopOnWeb environment"
-    echo "  $0 test medplum   # Runs Medplum tests and captures output"
     exit 1
 }
 
@@ -36,7 +31,7 @@ fi
 COMMAND=$1
 TARGET=$2
 
-# Helper function for cloning repositories
+# Helper function for cloning
 clone_repo() {
     local repo_url=$1
     local target_dir=$2
@@ -55,32 +50,54 @@ clone_repo() {
     fi
 }
 
-# Map target to working directory and determine compose file
+# Helper to set workdir
 set_workdir() {
     case "$1" in
-        eshop)
-            WORKDIR=$ESHOP_DIR
-            COMPOSE_FILE="docker-compose.yml"
-            ;;
-        medplum)
-            WORKDIR=$MEDPLUM_DIR
-            COMPOSE_FILE="docker-compose.yml"
-            ;;
-        *)
-            if [ "$COMMAND" != "setup" ]; then
-                echo "Error: Target '$1' is not supported for command '$COMMAND'"
-                usage
-            fi
-            ;;
+        eshop) WORKDIR=$ESHOP_DIR; COMPOSE_FILE="docker-compose.yml" ;;
+        medplum) WORKDIR=$MEDPLUM_DIR; COMPOSE_FILE="docker-compose.yml" ;;
+        *) [ "$COMMAND" != "setup" ] && usage ;;
     esac
 }
+
 
 case "$COMMAND" in
     setup)
         echo "Initializing sandbox environments..."
+        
+        # --- eShopOnWeb Setup ---
         if [ "$TARGET" == "eshop" ] || [ "$TARGET" == "all" ]; then
             clone_repo "$ESHOP_REPO" "$ESHOP_DIR"
+            
+            echo "Patching eShopOnWeb files....."
+            # Update Dockerfiles to .NET 10.0
+	    # Specific Dockerfile paths provided            
+	    FILE_WEB="$ESHOP_DIR/src/Web/Dockerfile"            
+	    FILE_API="$ESHOP_DIR/src/PublicApi/Dockerfile"            
+	    FILE_OVERRIDE="$ESHOP_DIR/docker-compose.override.yml"
+	    
+	    # Patch Web Dockerfile
+            if [ -f "$FILE_WEB" ]; then
+                sed -i 's/dotnet\/sdk:9.0/dotnet\/sdk:10.0/g' "$FILE_WEB"
+                sed -i 's/dotnet\/aspnet:9.0/dotnet\/aspnet:10.0/g' "$FILE_WEB"
+                echo " - $FILE_WEB updated to .NET 10.0"
+            fi
+
+            # Patch PublicApi Dockerfile
+            if [ -f "$FILE_API" ]; then
+                sed -i 's/dotnet\/sdk:9.0/dotnet\/sdk:10.0/g' "$FILE_API"
+                sed -i 's/dotnet\/aspnet:9.0/dotnet\/aspnet:10.0/g' "$FILE_API"
+                echo " - $FILE_API updated to .NET 10.0"
+            fi
+
+	    # Replace ASPNETCORE_URLS with Aspire__Seq__ServerUrl in override file            
+	    if [ -f "$FILE_OVERRIDE" ]; then                
+	    	sed -i 's|- ASPNETCORE_URLS=http://+:8080|- Aspire__Seq__ServerUrl=http://localhost:1111|g' "$FILE_OVERRIDE"                
+	    	echo " - $FILE_OVERRIDE environment variables updated."            
+	    fi
+	    
         fi
+
+        # --- Medplum Setup ---
         if [ "$TARGET" == "medplum" ] || [ "$TARGET" == "all" ]; then
             clone_repo "$MEDPLUM_REPO" "$MEDPLUM_DIR" "$MEDPLUM_TAG"
         fi
@@ -89,41 +106,34 @@ case "$COMMAND" in
     start)
         set_workdir "$TARGET"
         echo "Starting $TARGET sandbox..."
-        # --build ensures AI-generated code changes are incorporated
         docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" up -d --build
         ;;
 
     stop)
         set_workdir "$TARGET"
-        echo "Stopping $TARGET containers..."
         docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" stop
         ;;
 
     clean)
         set_workdir "$TARGET"
-        echo "Purging $TARGET environment (Ensuring Clean State)..."
-        # -v removes volumes to guarantee database schema reset
+        echo "Purging $TARGET environment (Clean State)..."
         docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans
         ;;
 
     test)
         set_workdir "$TARGET"
-        echo "Executing non-interactive test suite for $TARGET..."
+        echo "Running tests for $TARGET..."
         if [ "$TARGET" == "eshop" ]; then
-            # Run .NET tests and export to TRX (XML) format for structured capture
             docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" exec -T web \
                 dotnet test --logger "trx;LogFileName=../../../../results/eshop_results.trx"
         elif [ "$TARGET" == "medplum" ]; then
-            # Run Node.js tests and capture JSON output for AI consumption
             docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" exec -T api \
                 npm test -- --reporter json > "$RESULTS_DIR/medplum_results.json"
         fi
-        echo "Test results saved to $RESULTS_DIR"
         ;;
 
     status)
         set_workdir "$TARGET"
-        echo "Current status for $TARGET:"
         docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" ps
         ;;
 
