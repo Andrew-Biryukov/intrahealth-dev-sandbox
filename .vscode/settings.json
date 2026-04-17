@@ -1,0 +1,6 @@
+{
+    "git.ignoredRepositories": [
+        "projects/eShopOnWeb",
+        "projects/medplum"
+    ]
+}
