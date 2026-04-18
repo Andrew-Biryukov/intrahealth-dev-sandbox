@@ -107,19 +107,27 @@ case "$COMMAND" in
 	
         ;;
 
-    
     start)
         set_workdir "$TARGET"
         echo "Starting $TARGET sandbox from $WORKDIR..."
-        #(cd $WORKDIR; docker compose up -d)
-	(cd "$WORKDIR" && docker compose \
-	  -f docker-compose.yml \
-  	  -f docker-compose.override.yml \
-  	  -f docker-compose.sql-health.yml \
-  	  up -d)
-        ;;
 
+        case "$TARGET" in
+            "eshop")
+                COMPOSE_FILES="-f docker-compose.yml -f docker-compose.override.yml -f docker-compose.health.yml"
+                ;;
+            "medplum")
+                COMPOSE_FILES="-f docker-compose.yml -f docker-compose.full-stack.yml"
+                ;;
+            *)
+                echo "Error: Unknown target '$TARGET'"
+                exit 1
+                ;;
+        esac
 
+        (cd "$WORKDIR" && docker compose $COMPOSE_FILES up -d)
+        ;;    
+
+  
     stop)
         set_workdir "$TARGET"
         (cd $WORKDIR; docker compose stop)
