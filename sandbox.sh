@@ -90,12 +90,10 @@ case "$COMMAND" in
                 echo " - $FILE_API updated to .NET 10.0"
             fi
 
-	        # Replace ASPNETCORE_URLS with Aspire__Seq__ServerUrl in override file            
-	        if [ -f "$FILE_OVERRIDE" ]; then                
-	    	    sed -i 's|- ASPNETCORE_URLS=http://+:8080|- Aspire__Seq__ServerUrl=http://localhost:1111|g' "$FILE_OVERRIDE"                
-	    	    echo " - $FILE_OVERRIDE environment variables updated."            
-	        fi
-	    
+	    if [ -f "$FILE_OVERRIDE" ]; then
+	        sed -i '0,/ASPNETCORE_URLS/s/ASPNETCORE_URLS.*/&\n      - Aspire__Seq__ServerUrl=http://localhost:1111/' "$FILE_OVERRIDE"
+        	echo " - $FILE_OVERRIDE updated (only first match patched)."
+    	    fi
         fi
 
         # --- Medplum Setup ---
