@@ -96,13 +96,14 @@ case "$COMMAND" in
     	    fi
 	    
 	    #Add health check for sql server.
-	    cp  docker-compose.sql-health.yml $ESHOP_DIR
+	    cp  eshop-docker-compose.sql-health.yml $ESHOP_DIR/docker-compose.sql-health.yml
 	    echo "docker-compose.sql-health.yml is added"
         fi
 
         # --- Medplum Setup ---
         if [ "$TARGET" == "medplum" ] || [ "$TARGET" == "all" ]; then
             clone_repo "$MEDPLUM_REPO" "$MEDPLUM_DIR" "$MEDPLUM_TAG"
+	    cp medplum-docker-compose.override.yml $MEDPLUM_DIR/docker-compose.override.yml
         fi
 	
         ;;
@@ -116,7 +117,7 @@ case "$COMMAND" in
                 COMPOSE_FILES="-f docker-compose.yml -f docker-compose.override.yml -f docker-compose.health.yml"
                 ;;
             "medplum")
-                COMPOSE_FILES="-f docker-compose.yml -f docker-compose.full-stack.yml"
+                COMPOSE_FILES="-f docker-compose.yml -f docker-compose.full-stack.yml -f docker-compose.override.yml"
                 ;;
             *)
                 echo "Error: Unknown target '$TARGET'"

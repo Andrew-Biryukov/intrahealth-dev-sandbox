@@ -1,0 +1,6 @@
+services:
+  medplum-server:
+    healthcheck:
+      start_period: 3m
+      retries: 15
+      interval: 30s
