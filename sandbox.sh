@@ -51,11 +51,10 @@ clone_repo() {
     fi
 }
 
-# Helper to set workdir
 set_workdir() {
     case "$1" in
-        eshop) WORKDIR=$ESHOP_DIR; COMPOSE_FILE="docker-compose.yml" ;;
-        medplum) WORKDIR=$MEDPLUM_DIR; COMPOSE_FILE="docker-compose.yml" ;;
+        eshop) WORKDIR=$ESHOP_DIR ;;
+        medplum) WORKDIR=$MEDPLUM_DIR ;;
         *) [ "$COMMAND" != "setup" ] && usage ;;
     esac
 }
@@ -102,16 +101,18 @@ case "$COMMAND" in
         fi
         ;;
 
+    
     start)
         set_workdir "$TARGET"
-        echo "Starting $TARGET sandbox..."
-        docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" up -d --build
+        echo "Starting $TARGET sandbox from $WORKDIR..."
+        docker compose up -d
         ;;
 
     stop)
         set_workdir "$TARGET"
-        docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" stop
+        docker compose stop
         ;;
+
 
     clean)
         echo "Purging $TARGET environment (Full Reset)..."
@@ -126,7 +127,7 @@ case "$COMMAND" in
             docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans --rmi all 2>/dev/null
         else
             set_workdir "$TARGET"
-            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans --rmi all
+            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans --rmi all 2>/dev/null
         fi
 
         # 2. Remove cloned source code
