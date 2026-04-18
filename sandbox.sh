@@ -90,27 +90,39 @@ case "$COMMAND" in
             fi
 
 	    if [ -f "$FILE_OVERRIDE" ]; then
-	        sed -i '0,/ASPNETCORE_URLS/s/ASPNETCORE_URLS.*/&\n      - Aspire__Seq__ServerUrl=http://localhost:1111/' "$FILE_OVERRIDE"
-        	echo " - $FILE_OVERRIDE updated (only first match patched)."
+	    	LINE_NUM=$(grep -n -m 1 "ports:" "$FILE_OVERRIDE" | cut -d: -f1)
+	    	sed -i "${LINE_NUM}i \     - Aspire__Seq__ServerUrl=http://localhost:1111" "$FILE_OVERRIDE"
+             	echo " - $FILE_OVERRIDE updated (only first match patched)."
     	    fi
+	    
+	    #Add health check for sql server.
+	    cp  docker-compose.sql-health.yml $ESHOP_DIR
+	    echo "docker-compose.sql-health.yml is added"
         fi
 
         # --- Medplum Setup ---
         if [ "$TARGET" == "medplum" ] || [ "$TARGET" == "all" ]; then
             clone_repo "$MEDPLUM_REPO" "$MEDPLUM_DIR" "$MEDPLUM_TAG"
         fi
+	
         ;;
 
     
     start)
         set_workdir "$TARGET"
         echo "Starting $TARGET sandbox from $WORKDIR..."
-        docker compose up -d
+        #(cd $WORKDIR; docker compose up -d)
+	(cd "$WORKDIR" && docker compose \
+	  -f docker-compose.yml \
+  	  -f docker-compose.override.yml \
+  	  -f docker-compose.sql-health.yml \
+  	  up -d)
         ;;
+
 
     stop)
         set_workdir "$TARGET"
-        docker compose stop
+        (cd $WORKDIR; docker compose stop)
         ;;
 
 
@@ -121,13 +133,15 @@ case "$COMMAND" in
         if [ "$TARGET" == "all" ]; then
             # Clean eshop
             set_workdir "eshop"
-            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans --rmi all 2>/dev/null
+            (cd $WORKDIR; docker compose down -v --remove-orphans --rmi all 2>/dev/null)
             # Clean medplum
             set_workdir "medplum"
-            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans --rmi all 2>/dev/null
+            (cd $WORKDIR; docker compose down -v --remove-orphans --rmi all 2>/dev/null)
         else
             set_workdir "$TARGET"
-            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" down -v --remove-orphans --rmi all 2>/dev/null
+	    #echo "WORKDIR=$WORKDIR"
+            (cd $WORKDIR; docker compose down -v --remove-orphans --rmi all 2>/dev/null)
+	    #echo -n "pwd="; pwd
         fi
 
         # 2. Remove cloned source code

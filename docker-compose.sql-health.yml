@@ -1,0 +1,18 @@
+services:
+  sqlserver:
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/localhost/1433' 2>/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  eshopwebmvc:
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+  eshoppublicapi:
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+        
