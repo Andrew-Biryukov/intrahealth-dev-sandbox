@@ -17,7 +17,7 @@ MEDPLUM_REPO="https://github.com/medplum/medplum.git"
 MEDPLUM_TAG="v5.1.8"
 
 #Compose files
-ESHOP_COMPOSE_FILES="-f docker-compose.yml -f docker-compose.override.yml -f docker-compose.health.yml"
+ESHOP_COMPOSE_FILES="-f docker-compose.yml -f docker-compose.override.yml -f docker-compose.sql-health.yml"
 MEDPLUM_COMPOSE_FILES="-f docker-compose.yml -f docker-compose.full-stack.yml -f docker-compose.override.yml"
 
 #IP address detection
