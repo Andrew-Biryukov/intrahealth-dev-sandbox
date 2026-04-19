@@ -16,6 +16,11 @@ ESHOP_REPO="https://github.com/NimblePros/eShopOnWeb.git"
 MEDPLUM_REPO="https://github.com/medplum/medplum.git"
 MEDPLUM_TAG="v5.1.8"
 
+#Compose files
+ESHOP_COMPOSE_FILES="-f docker-compose.yml -f docker-compose.override.yml -f docker-compose.health.yml"
+MEDPLUM_COMPOSE_FILES="-f docker-compose.yml -f docker-compose.full-stack.yml -f docker-compose.override.yml"
+
+
 # Ensure core directories exist
 mkdir -p "$PROJECTS_DIR"
 mkdir -p "$RESULTS_DIR"
@@ -114,24 +119,35 @@ case "$COMMAND" in
 
         case "$TARGET" in
             "eshop")
-                COMPOSE_FILES="-f docker-compose.yml -f docker-compose.override.yml -f docker-compose.health.yml"
+                (cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES up -d)
                 ;;
             "medplum")
-                COMPOSE_FILES="-f docker-compose.yml -f docker-compose.full-stack.yml -f docker-compose.override.yml"
+                (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES up -d)
                 ;;
             *)
                 echo "Error: Unknown target '$TARGET'"
                 exit 1
                 ;;
         esac
-
-        (cd "$WORKDIR" && docker compose $COMPOSE_FILES up -d)
         ;;    
 
   
     stop)
-        set_workdir "$TARGET"
-        (cd $WORKDIR; docker compose stop)
+	set_workdir "$TARGET"
+        echo "Starting $TARGET sandbox from $WORKDIR..."
+
+        case "$TARGET" in
+            "eshop")
+                (cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES stop)
+                ;;
+            "medplum")
+                (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES stop)
+                ;;
+            *)
+                echo "Error: Unknown target '$TARGET'"
+                exit 1
+                ;;
+        esac
         ;;
 
 
@@ -142,15 +158,25 @@ case "$COMMAND" in
         if [ "$TARGET" == "all" ]; then
             # Clean eshop
             set_workdir "eshop"
-            (cd $WORKDIR; docker compose down -v --remove-orphans --rmi all 2>/dev/null)
+	    (cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null))
             # Clean medplum
             set_workdir "medplum"
-            (cd $WORKDIR; docker compose down -v --remove-orphans --rmi all 2>/dev/null)
+	    (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null))
         else
             set_workdir "$TARGET"
-	    #echo "WORKDIR=$WORKDIR"
-            (cd $WORKDIR; docker compose down -v --remove-orphans --rmi all 2>/dev/null)
-	    #echo -n "pwd="; pwd
+	        case "$TARGET" in
+        	    "eshop")
+                	(cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null))
+                	;;
+            	    "medplum")
+                	(cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null))
+                	;;
+            	    *)
+                	echo "Error: Unknown target '$TARGET'"
+                	exit 1
+                	;;
+        	esac
+
         fi
 
         # 2. Remove cloned source code
@@ -188,6 +214,18 @@ case "$COMMAND" in
     status)
         set_workdir "$TARGET"
         docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" ps
+        case "$TARGET" in
+       	    "eshop")
+               	(cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null))
+               	;;
+       	    "medplum")
+               	(cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null))
+               	;;
+            *)
+               	echo "Error: Unknown target '$TARGET'"
+               	exit 1
+               	;;
+        esac
         ;;
 
     *)
