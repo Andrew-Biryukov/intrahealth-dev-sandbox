@@ -129,10 +129,10 @@ case "$COMMAND" in
 
         case "$TARGET" in
             "eshop")
-                (cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES up -d --build)
+                (cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES up -d)
                 ;;
             "medplum")
-                (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES up -d --build)
+                (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES up -d)
                 ;;
             *)
                 echo "Error: Unknown target '$TARGET'"
@@ -148,10 +148,10 @@ case "$COMMAND" in
 
         case "$TARGET" in
             "eshop")
-                (cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES stop)
+                (cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES down -v)
                 ;;
             "medplum")
-                (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES stop)
+                (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES down -v)
                 ;;
             *)
                 echo "Error: Unknown target '$TARGET'"
