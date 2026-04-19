@@ -18,3 +18,5 @@ docker-compose.override.yml
 # Если твои скрипты будут генерировать временные конфиги или дампы
 *.tmp
 *.bak
+
+intrahealth-dev-sandbox.code-workspace
