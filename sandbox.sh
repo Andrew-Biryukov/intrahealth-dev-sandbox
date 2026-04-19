@@ -130,15 +130,28 @@ case "$COMMAND" in
         case "$TARGET" in
             "eshop")
                 (cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES up -d)
+		echo "eShopOnWeb is available by the following URLs:
+		http://$SANDBOX_IP:5106
+		http://$SANDBOX_IP:5106/health
+		http://$SANDBOX_IP:5200/swagger
+                http://$SANDBOX_IP:5200/health
+		" 
+
                 ;;
             "medplum")
                 (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES up -d)
+		echo "medplum is available by the following URLs:
+		http://$SANDBOX_IP:3000
+		http://$SANDBOX_IP:8103/healthcheck
+		" 
+
                 ;;
             *)
                 echo "Error: Unknown target '$TARGET'"
                 exit 1
                 ;;
         esac
+	
         ;;    
 
   
