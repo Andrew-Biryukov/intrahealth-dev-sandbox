@@ -20,6 +20,16 @@ MEDPLUM_TAG="v5.1.8"
 ESHOP_COMPOSE_FILES="-f docker-compose.yml -f docker-compose.override.yml -f docker-compose.health.yml"
 MEDPLUM_COMPOSE_FILES="-f docker-compose.yml -f docker-compose.full-stack.yml -f docker-compose.override.yml"
 
+#IP address detection
+# 1. Try to get the real local IP
+DETECTED_IP=$(hostname -I | awk '{print $1}')
+
+# 2. Assign to SANDBOX_IP, but only if not already set by the user
+# and use DETECTED_IP as the first choice, or 'localhost' as the last resort
+export SANDBOX_IP=${SANDBOX_IP:-${DETECTED_IP:-localhost}}
+
+echo "Current Sandbox IP: $SANDBOX_IP"
+
 
 # Ensure core directories exist
 mkdir -p "$PROJECTS_DIR"
@@ -119,10 +129,10 @@ case "$COMMAND" in
 
         case "$TARGET" in
             "eshop")
-                (cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES up -d)
+                (cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES up -d --build)
                 ;;
             "medplum")
-                (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES up -d)
+                (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES up -d --build)
                 ;;
             *)
                 echo "Error: Unknown target '$TARGET'"
@@ -134,7 +144,7 @@ case "$COMMAND" in
   
     stop)
 	set_workdir "$TARGET"
-        echo "Starting $TARGET sandbox from $WORKDIR..."
+        echo "Stopping $TARGET sandbox from $WORKDIR..."
 
         case "$TARGET" in
             "eshop")
@@ -158,18 +168,18 @@ case "$COMMAND" in
         if [ "$TARGET" == "all" ]; then
             # Clean eshop
             set_workdir "eshop"
-	    (cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null))
+	    (cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null)
             # Clean medplum
             set_workdir "medplum"
-	    (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null))
+	    (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null)
         else
             set_workdir "$TARGET"
 	        case "$TARGET" in
         	    "eshop")
-                	(cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null))
+                	(cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null)
                 	;;
             	    "medplum")
-                	(cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null))
+                	(cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null)
                 	;;
             	    *)
                 	echo "Error: Unknown target '$TARGET'"
@@ -213,13 +223,12 @@ case "$COMMAND" in
 
     status)
         set_workdir "$TARGET"
-        docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" ps
         case "$TARGET" in
        	    "eshop")
-               	(cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null))
+               	(cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES ps)
                	;;
        	    "medplum")
-               	(cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES down -v --remove-orphans --rmi all 2>/dev/null))
+               	(cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES ps)
                	;;
             *)
                	echo "Error: Unknown target '$TARGET'"

@@ -2,9 +2,18 @@ services:
   medplum-server:
     healthcheck:
       # Start probing early to catch the moment migrations finish
-      start_period: 30s 
+      start_period: 2m
       # Frequent checks (every 15s) minimize wait time for dependent services or readiness status
-      interval: 15s
-      # 60 retries * 15s = 15-minute total grace period for the first-run database setup
+      interval: 30s
+      # 60 retries * 30s = 30-minute total grace period for the first-run database setup
       retries: 60
       timeout: 10s
+    environment:
+      MEDPLUM_PORT: 8103
+      MEDPLUM_BASE_URL: 'http://${SANDBOX_IP}:8103/'
+      MEDPLUM_APP_BASE_URL: 'http://${SANDBOX_IP}:3000/'
+      MEDPLUM_STORAGE_BASE_URL: 'http://${SANDBOX_IP}:8103/storage/'
+  medplum-app:
+    environment:
+      # This is crucial for the frontend to know where to send requests
+      - MEDPLUM_BASE_URL=http://${SANDBOX_IP}:8103/
