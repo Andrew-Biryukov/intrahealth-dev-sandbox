@@ -280,6 +280,7 @@ http://$SANDBOX_IP:8103/healthcheck
         echo "Cleanup complete. System is in a 'Ready to Setup' state."
         ;;
 
+
     test)
         set_workdir "$TARGET"
         echo "Running tests for $TARGET..."
