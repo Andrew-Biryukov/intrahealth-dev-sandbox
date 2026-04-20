@@ -42,7 +42,7 @@ mkdir -p "$PROJECTS_DIR"
 mkdir -p "$RESULTS_DIR"
 
 usage() {
-    echo "Usage: $0 {setup|start|stop|clean|test|status} {eshop|medplum|all}"
+    echo "Usage: $0 {setup|start|stop|clean|status} {eshop|medplum|all}"
     exit 1
 }
 
@@ -280,20 +280,6 @@ http://$SANDBOX_IP:8103/healthcheck
         echo "Cleanup complete. System is in a 'Ready to Setup' state."
         ;;
 
-
-    test)
-        set_workdir "$TARGET"
-        echo "Running tests for $TARGET..."
-        
-        if [ "$TARGET" == "eshop" ]; then
-            (cd "$WORKDIR" && docker compose -f "$ESHOP_COMPOSE_FILES" --project-directory "$WORKDIR" exec -T web \
-                dotnet test --logger "trx;LogFileName=results/eshop_results.trx")
-                
-        elif [ "$TARGET" == "medplum" ]; then
-             (cd "$WORKDIR" && docker compose -f "$MEDPLUM_COMPOSE_FILES" --project-directory "$WORKDIR" exec -T api \
-                npm test -- --reporter json > "$RESULTS_DIR/medplum_results.json")
-        fi
-        ;;
 
 
     status)
