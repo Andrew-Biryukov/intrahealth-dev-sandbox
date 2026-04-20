@@ -141,7 +141,6 @@ case "$COMMAND" in
 http://$SANDBOX_IP:5106
 http://$SANDBOX_IP:5106/health
 http://$SANDBOX_IP:5200/swagger
-http://$SANDBOX_IP:5200/health
 " 
                 ;;
             "medplum")
@@ -211,10 +210,10 @@ http://$SANDBOX_IP:8103/healthcheck
 
         case "$TARGET" in
             "eshop")
-                (cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES down -v)
+                (cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES down)
                 ;;
             "medplum")
-                (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES down -v)
+                (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES stop)
                 ;;
             *)
                 echo "Error: Unknown target '$TARGET'"
@@ -252,7 +251,7 @@ http://$SANDBOX_IP:8103/healthcheck
 
         fi
 
-        # 2. Remove cloned source code
+        # 2. Remove cloned source code and volume backup
         echo "Removing source code directories..."
         if [ "$TARGET" == "eshop" ] || [ "$TARGET" == "all" ]; then
             if [ -d "$ESHOP_DIR" ]; then
@@ -271,23 +270,30 @@ http://$SANDBOX_IP:8103/healthcheck
 		fi				
             fi
         fi
-        
+
+	IMAGE_NAME="alpine:latest"
+	if [ -n "$(docker images -q $IMAGE_NAME)" ]; then
+	    echo "Image $IMAGE_NAME found. Removing..."
+	    docker rmi "$IMAGE_NAME"
+    	    echo "Image $IMAGE_NAME is deleted."
+	fi
         echo "Cleanup complete. System is in a 'Ready to Setup' state."
         ;;
-
 
     test)
         set_workdir "$TARGET"
         echo "Running tests for $TARGET..."
+        
         if [ "$TARGET" == "eshop" ]; then
-            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" exec -T web \
-                dotnet test --logger "trx;LogFileName=../../../../results/eshop_results.trx"
+            (cd "$WORKDIR" && docker compose -f "$ESHOP_COMPOSE_FILES" --project-directory "$WORKDIR" exec -T web \
+                dotnet test --logger "trx;LogFileName=results/eshop_results.trx")
+                
         elif [ "$TARGET" == "medplum" ]; then
-            docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" exec -T api \
-                npm test -- --reporter json > "$RESULTS_DIR/medplum_results.json"
-		rm -rf  
+             (cd "$WORKDIR" && docker compose -f "$MEDPLUM_COMPOSE_FILES" --project-directory "$WORKDIR" exec -T api \
+                npm test -- --reporter json > "$RESULTS_DIR/medplum_results.json")
         fi
         ;;
+
 
     status)
         set_workdir "$TARGET"
