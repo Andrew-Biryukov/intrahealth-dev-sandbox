@@ -178,7 +178,7 @@ http://$SANDBOX_IP:5200/swagger
         				echo "[$(date +%T)] Active queries: ${ACTIVE_QUERIES:-error}. Waiting..."
     				fi
 				# Wait for 3 seconds before next check
-    				sleep 1
+    				sleep 3
 			done
 
 			echo "Database confirmed idle. Proceeding..."
