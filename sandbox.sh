@@ -20,6 +20,12 @@ MEDPLUM_TAG="v5.1.8"
 ESHOP_COMPOSE_FILES="-f docker-compose.yml -f docker-compose.override.yml -f docker-compose.sql-health.yml"
 MEDPLUM_COMPOSE_FILES="-f docker-compose.yml -f docker-compose.full-stack.yml -f docker-compose.override.yml"
 
+#Postgres volume backup parameters
+PG_CONTAINER_NAME="medplum-postgres-1"
+PG_VOLUME_NAME="medplum_medplum-postgres-data"
+PG_VOLUME_BACKUP_FILE="medplum_db_backup.tar.gz"
+
+
 #IP address detection
 # 1. Try to get the real local IP
 DETECTED_IP=$(hostname -I | awk '{print $1}')
@@ -129,22 +135,66 @@ case "$COMMAND" in
 
         case "$TARGET" in
             "eshop")
+                
                 (cd "$WORKDIR" && docker compose $ESHOP_COMPOSE_FILES up -d)
 		echo "eShopOnWeb is available by the following URLs:
-		http://$SANDBOX_IP:5106
-		http://$SANDBOX_IP:5106/health
-		http://$SANDBOX_IP:5200/swagger
-                http://$SANDBOX_IP:5200/health
-		" 
-
+http://$SANDBOX_IP:5106
+http://$SANDBOX_IP:5106/health
+http://$SANDBOX_IP:5200/swagger
+http://$SANDBOX_IP:5200/health
+" 
                 ;;
             "medplum")
-                (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES up -d)
-		echo "medplum is available by the following URLs:
-		http://$SANDBOX_IP:3000
-		http://$SANDBOX_IP:8103/healthcheck
-		" 
+		
+		if [ -f "$PG_VOLUME_BACKUP_FILE" ]; then
+			echo "Postgres volume backup file $PG_VOLUME_BACKUP_FILE was found, restoring volume from backup"
+			echo "Create empty volume $PG_VOLUME_NAME"
+			docker volume create $PG_VOLUME_NAME
+			echo "Add PG files to the volume"
+			docker run --rm -v $PG_VOLUME_NAME:/dest -v $(pwd):/backup alpine sh -c "tar xzf /backup/$PG_VOLUME_BACKUP_FILE -C /dest"
+		fi
 
+                (cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES up -d)
+
+
+		if [ ! -f  "$PG_VOLUME_BACKUP_FILE" ]; then
+			echo "Postgres volume backup file $PG_VOLUME_BACKUP_FILE was not found, creating volume backup"
+			SUCCESS_COUNT=0
+			REQUIRED_SUCCESSES=5
+			echo "Waiting for PostgreSQL to stay idle for $REQUIRED_SUCCESSES consecutive checks..."
+			while [ $SUCCESS_COUNT -lt $REQUIRED_SUCCESSES ]; do
+    				# Capture clean numeric output
+    				ACTIVE_QUERIES=$(docker exec $PG_CONTAINER_NAME psql -U medplum -t -A -c "SELECT count(*) FROM pg_stat_activity WHERE state = 'active';" 2>/dev/null)
+
+				# Check if we got a valid number and it's equal to 1
+    				if [[ "$ACTIVE_QUERIES" =~ ^[0-9]+$ ]] && [ "$ACTIVE_QUERIES" -eq 1 ]; then
+        				((SUCCESS_COUNT++))
+        				echo "[$(date +%T)] Idle check $SUCCESS_COUNT/$REQUIRED_SUCCESSES passed."
+    				else
+        				# Reset counter if database becomes active again
+        				if [ $SUCCESS_COUNT -gt 0 ]; then
+            					echo "[$(date +%T)] Activity detected! Resetting counter."
+        				fi
+        				SUCCESS_COUNT=0
+        				echo "[$(date +%T)] Active queries: ${ACTIVE_QUERIES:-error}. Waiting..."
+    				fi
+				# Wait for 3 seconds before next check
+    				sleep 1
+			done
+
+			echo "Database confirmed idle. Proceeding..."
+			echo "docker compose pause"
+			(cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES pause)
+			echo "create postgres volume backup in file medplum_db_backup.tar.gz"
+			docker run --rm -v $PG_VOLUME_NAME:/source -v $(pwd):/backup alpine tar czf /backup/$PG_VOLUME_BACKUP_FILE -C /source .
+			echo "docker compose unpause"
+			(cd "$WORKDIR" && docker compose $MEDPLUM_COMPOSE_FILES unpause)
+		fi
+		
+		echo "medplum is available by the following URLs:  
+http://$SANDBOX_IP:3000   
+http://$SANDBOX_IP:8103/healthcheck
+" 
                 ;;
             *)
                 echo "Error: Unknown target '$TARGET'"
@@ -215,6 +265,10 @@ case "$COMMAND" in
             if [ -d "$MEDPLUM_DIR" ]; then
                 rm -rf "$MEDPLUM_DIR"
                 echo " - $MEDPLUM_DIR deleted."
+		if [ -f "$PG_VOLUME_BACKUP_FILE" ]; then 
+			rm -rf $PG_VOLUME_BACKUP_FILE
+			echo "Postgres volume baclup file $PG_VOLUME_BACKUP_FILE is deleted"
+		fi				
             fi
         fi
         
@@ -231,6 +285,7 @@ case "$COMMAND" in
         elif [ "$TARGET" == "medplum" ]; then
             docker compose -f "$WORKDIR/$COMPOSE_FILE" --project-directory "$WORKDIR" exec -T api \
                 npm test -- --reporter json > "$RESULTS_DIR/medplum_results.json"
+		rm -rf  
         fi
         ;;
 
