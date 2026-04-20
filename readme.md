@@ -12,7 +12,6 @@ The script manages the entire lifecycle of the environment, from cloning reposit
     * Implements an **Idle Check** to ensure the database has no active transactions before archiving.
     * Restores database state from a `.tar.gz` file on subsequent starts to bypass long migration phases.
 * **Dynamic IP Detection**: Automatically detects the host's local IP address to provide accurate access URLs.
-* **Isolation**: Supports multi-project management using the `--project-directory` flag.
 
 ## 🛠 Usage
 
@@ -27,8 +26,7 @@ Where **target** is: `eshop`, `medplum`, or `all`.
 | `start` | Launches containers. For Medplum, it restores the DB from backup if available. |
 | `stop` | Stops containers (`down` for eShop, `stop` for Medplum). |
 | `status` | Displays the status of containers for the selected project. |
-| `test` | Runs tests inside the containers (`dotnet test` or `npm test`). |
-| `clean` | **Full Reset**: Removes containers, images, volumes, source code, and DB backups. |
+| `clean` | **Full Reset**: Removes containers, images, volumes, source code, DB backups, and temporaly images|
 
 ## 📦 Medplum Postgres Backup Logic
 
@@ -57,5 +55,3 @@ Once started, the applications are accessible via the detected host IP:
 
 ---
 
-### Development Note
-All configuration changes (e.g., SDK version updates in Dockerfiles) are applied automatically during the `setup` phase. This keeps the local workspace clean and ensures customizations only exist within the sandbox environment.
